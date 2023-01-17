@@ -35,27 +35,29 @@ sudo service sshd restart
 # end
 
 # start ufw
-if [ ! -z $2 ] || [ ! -z $3 ] || [ ! -z $4 ] || [ ! -z $5 ]
+if [ ! -z $3 ] || [ ! -z $4 ] || [ ! -z $5 ] || [ ! -z $6 ]
 then
   sudo iptables -A OUTPUT -j ACCEPT
-  sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
-  sudo iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+  IFS=';' read -ra ADDR <<< "$2"
+    for tcp_port in "${ADDR[@]}"; do
+      sudo iptables -A INPUT -p tcp --dport $tcp_port -j ACCEPT
+    done
 fi
 # end
 
 # дозволяємо ip
-if [ ! -z $2 ]
+if [ ! -z $3 ]
 then
-    IFS=';' read -ra ADDR <<< "$2"
+    IFS=';' read -ra ADDR <<< "$3"
     for server_ip in "${ADDR[@]}"; do
       sudo iptables -A INPUT -p tcp -s $server_ip --dport $1 -j ACCEPT
     done
 fi
 # end
 # забороняємо ip
-if [ ! -z $3 ]
+if [ ! -z $4 ]
 then
-  IFS=';' read -ra ADDR <<< "$3"
+  IFS=';' read -ra ADDR <<< "$4"
     for server_ip in "${ADDR[@]}"; do
         sudo iptables -A INPUT -p tcp -s $server_ip --dport $1 -j DROP
     done
@@ -63,7 +65,7 @@ fi
 # end
 
 
-if [ ! -z $4 ] || [ ! -z $5 ]
+if [ ! -z $5 ] || [ ! -z $6 ]
 then
   # start geolib
   mkdir /usr/share/xt_geoip
@@ -74,9 +76,9 @@ then
   /usr/lib/xtables-addons/xt_geoip_build -D /usr/share/xt_geoip *.csv
   # end
   # дозволяємо geo
-  if [ ! -z $4 ]
+  if [ ! -z $5 ]
   then
-    iptables -I INPUT -p tcp --dport $1 -m geoip --src-cc $4 -j ACCEPT
+    iptables -I INPUT -p tcp --dport $1 -m geoip --src-cc $5 -j ACCEPT
 #    iptables -I INPUT ! -i lo -p tcp --dport 22 -m geoip ! --src-cc UA,RU -j DROP
 #    iptables -I INPUT -i lo -p tcp --dport $1 -m geoip --src-cc $4 -j ACCEPT
 #      IFS=';' read -ra ADDR <<< "$4"
@@ -85,19 +87,19 @@ then
 #      done
   fi
   # забороняємо geo
-  if [ ! -z $5 ]
+  if [ ! -z $6 ]
   then
-    iptables -I INPUT -p tcp --dport $1 -m geoip --src-cc $5 -j DROP
+    iptables -I INPUT -p tcp --dport $1 -m geoip --src-cc $6 -j DROP
   fi
 fi
 
 
-if [ ! -z $3 ] || [ ! -z $5 ]
+if [ ! -z $4 ] || [ ! -z $6 ]
 then
   sudo iptables -A INPUT -p tcp --dport $1 -j ACCEPT
 fi
 
-if [ ! -z $2 ] || [ ! -z $4 ]
+if [ ! -z $3 ] || [ ! -z $5 ]
 then
   sudo iptables -A INPUT -p tcp --dport $1 -j DROP
 fi
